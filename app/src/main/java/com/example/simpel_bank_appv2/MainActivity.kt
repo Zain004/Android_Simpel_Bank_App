@@ -28,6 +28,8 @@ import com.example.simpel_bank_appv2.ui.theme.Simpel_Bank_APPV2Theme
 import com.example.simpel_bank_appv2.ui.theme.screens.LandingScreen
 import com.example.simpel_bank_appv2.ui.theme.screens.LandingViewModel
 import android.util.Log
+import com.example.simpel_bank_appv2.ui.theme.screens.SplashScreen
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,11 +54,18 @@ fun AppNavigation(
     navController: NavHostController,
     landingViewModel: LandingViewModel
 ) {
-    NavHost(navController = navController, startDestination = "landing") {
+    NavHost(navController = navController, startDestination = "splash") {
+        // Steg 1: Splash screen som vises kun ved oppstart
+        composable("splash") {
+            SplashScreen(navController = navController)
+        }
+
+        // Steg 2: Landing Screen
         composable("landing") {
             LandingScreen(navController = navController, landingViewModel = landingViewModel)
         }
-        // Definer ruten for bank-skjermen INNE i NavHost
+
+        // Steg 3: Hvis vedkommende ønsker å administrere en av sine kontoer
         composable("bankScreen/{visueltKontonummer}") { backStackEntry ->
             val visueltKontonummerString = backStackEntry.arguments?.getString("visueltKontonummer")
             val visueltKontonummer = visueltKontonummerString?.toLongOrNull()
@@ -84,16 +93,5 @@ fun BankScreenwithAccount(
     navController: NavHostController) {
     BankScreen(konto = konto, navController = navController)
     }
-/*
-// ViewModel Factory for å initialisere BankViewModel med en gitt konto
-class BankViewModelFactory(private val initialKonto: BankKonto) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(BankViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return BankViewModel(initialKonto) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-    }
-}
 
-*/
+
