@@ -26,6 +26,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import androidx.navigation.NavHostController
+import com.example.simpel_bank_app.data.BankKonto
 import com.example.simpel_bank_app.data.Transaksjon
 import com.example.simpel_bank_app.data.Transaksjonstype
 import java.time.format.DateTimeFormatter
@@ -38,16 +41,18 @@ import java.time.format.DateTimeFormatter
 //@Suppress("NewApi")
 @OptIn(ExperimentalMaterial3Api::class) // aksepterer
 @Composable
-fun BankScreen(viewModel: BankViewModel = viewModel()) {
+fun BankScreen(
+    konto: BankKonto,
+    navController: NavHostController // bruker host controller for å navigere fordi vi bruker compose
+) {
     // Hent tilstanden fra ViewModel
-    val konto = viewModel.bankKonto
     var innskuddsBelopInput by remember {mutableStateOf("")}
     var uttaksBelopInput by remember {mutableStateOf("")}
     var kontoeierNavnInput by remember {mutableStateOf(konto.kontoeierNavn)}
     var visFeilmelding by remember {mutableStateOf<String?>(null)}
 
     val formatter = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
-    val datoString = formatter.format(Date())
+
 
     /*
         Denne koden lager en vertikal layout (Column) som fyller hele skjermen, med padding på 16.dp rundt innholdet.
@@ -99,12 +104,13 @@ fun BankScreen(viewModel: BankViewModel = viewModel()) {
      */
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+        modifier = Modifier.fillMaxSize().padding(top = 40.dp, start = 16.dp, end = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text("Enkel Bank App", style = MaterialTheme.typography.headlineMedium)
-        Spacer(modifier = Modifier.height(16.dp))
+        Text("Bank App",
+            style = MaterialTheme.typography.headlineMedium)
+        Spacer(modifier = Modifier.height(10.dp))
         // Kontoinformasjon seksjon
         // Kontoinformasjon seksjon
         Card(
@@ -116,14 +122,14 @@ fun BankScreen(viewModel: BankViewModel = viewModel()) {
                     value = kontoeierNavnInput,
                     onValueChange = { newValue ->
                         kontoeierNavnInput = newValue
-                        viewModel.settKontoeierNavn(newValue)
+                        konto.kontoeierNavn = newValue
                     },
                     label = { Text("Kontoeiers navn") },
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    "Saldo: ${String.format("%.2f", viewModel.visBalanse())} kr",
+                    "Saldo: ${String.format("%.2f", konto.pengeSum)} kr",
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center
@@ -198,7 +204,14 @@ fun BankScreen(viewModel: BankViewModel = viewModel()) {
         Button(onClick = {
             val belop = innskuddsBelopInput.toDoubleOrNull()
             if (belop != null) {
-                viewModel.settInn(belop)
+                konto.pengeSum += belop
+                konto.transaksjoner.add(
+                    Transaksjon(
+                        belop = belop,
+                        type = Transaksjonstype.INNSETT,
+                        tidspunkt = Date()
+                    )
+                )
                 innskuddsBelopInput = "" //Nullstill etter handling
                 visFeilmelding = null // Nullstill eventuel gammel feilmelding
             } else {
@@ -212,11 +225,18 @@ fun BankScreen(viewModel: BankViewModel = viewModel()) {
         Button(onClick = {
             val belop = uttaksBelopInput.toDoubleOrNull()
             if (belop != null) {
-                if (!viewModel.taUt(belop)) {
-                    visFeilmelding = "Ikke nok penger på konto eller ugyldig beløp."
-                } else {
+                if (belop <= konto.pengeSum) {
+                    konto.pengeSum -= belop
+                    konto.transaksjoner.add(
+                        Transaksjon(
+                            belop = belop,
+                            type = Transaksjonstype.UTTAK,
+                            tidspunkt = Date())
+                    )
                     uttaksBelopInput = "" // Nullstill etter handling
                     visFeilmelding = null // Nullstill eventuell gammel
+                } else {
+                    visFeilmelding = "Ikke nok penger på konto eller ugyldig beløp."
                 }
             } else {
                 visFeilmelding = "Ugyldig beløp for uttak"
@@ -290,10 +310,3 @@ fun TransaksjonsItem(transaksjon: Transaksjon, formatter: SimpleDateFormat) {
 }
 
 // Preview-funksjon for å se hvordan BankScreen ser ut i designvisningen
-@Preview(showBackground = true)
-@Composable
-fun PreviewBankScreen() {
-    MaterialTheme { // V Binder for å gi tema til preview
-        BankScreen()
-    }
-}

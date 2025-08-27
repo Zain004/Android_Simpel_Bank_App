@@ -16,13 +16,13 @@ import kotlin.concurrent.withLock
 Tanken bak dette model viewet er at koden min skal være gjenbrukbar altså single responsibility,
 slik at klassen har kun attributer og model viewet har metodene
  */
-class BankViewModel : ViewModel() {
+class BankViewModel(initialKonto: BankKonto) : ViewModel() {
 
     // Synkron lås for trådsikker oppdatering
     private val lock = ReentrantLock()
 
     // Observable state for Compose
-    var bankKonto by mutableStateOf(BankKonto())
+    var bankKonto by mutableStateOf(initialKonto)
         private set
 
     // Sett inn beløp
