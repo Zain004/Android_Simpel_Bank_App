@@ -1,6 +1,7 @@
 package com.example.simpel_bank_app.ui.screens
 
 // ui/BankViewModel.kt
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -70,7 +71,11 @@ class BankViewModel(initialKonto: BankKonto) : ViewModel() {
     // Sett kontoeiers navn
     fun settKontoeierNavn(navn: String) {
         lock.withLock {
+            Log.d("BankViewModel", "Setter kontoeierNavn til: $navn")
             bankKonto = bankKonto.copy(kontoeierNavn = navn)
+            Log.d("BankViewModel", "Ny bankKonto instans: ${bankKonto.kontoeierNavn}")
         }
     }
+
+
 }

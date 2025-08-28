@@ -3,6 +3,7 @@ package com.example.simpel_bank_app.ui.screens
 // ui/screens/BankScreen.kt
 import android.R
 import android.R.attr.label
+import android.util.Log
 import android.widget.Space
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
@@ -31,6 +32,7 @@ import androidx.navigation.NavHostController
 import com.example.simpel_bank_app.data.BankKonto
 import com.example.simpel_bank_app.data.Transaksjon
 import com.example.simpel_bank_app.data.Transaksjonstype
+import com.example.simpel_bank_appv2.ui.theme.screens.LandingViewModel
 import java.time.format.DateTimeFormatter
 
 // Dataklasser som ble definert tidligere
@@ -42,66 +44,18 @@ import java.time.format.DateTimeFormatter
 @OptIn(ExperimentalMaterial3Api::class) // aksepterer
 @Composable
 fun BankScreen(
-    konto: BankKonto,
-    navController: NavHostController // bruker host controller for å navigere fordi vi bruker compose
+    navController: NavHostController, // bruker host controller for å navigere fordi vi bruker compose
+    bankViewModel: BankViewModel,
+    landingViewModel: LandingViewModel
 ) {
     // Hent tilstanden fra ViewModel
     var innskuddsBelopInput by remember {mutableStateOf("")}
     var uttaksBelopInput by remember {mutableStateOf("")}
-    var kontoeierNavnInput by remember {mutableStateOf(konto.kontoeierNavn)}
     var visFeilmelding by remember {mutableStateOf<String?>(null)}
 
     val formatter = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
 
 
-    /*
-        Denne koden lager en vertikal layout (Column) som fyller hele skjermen, med padding på 16.dp rundt innholdet.
-
-        Column-innstillinger:
-        - `horizontalAlignment = Alignment.CenterHorizontally` → alt innhold sentreres horisontalt.
-        - `verticalArrangement = Arrangement.spacedBy(12.dp)` → alle elementene får 12.dp vertikal avstand mellom seg.
-
-        Innholdet i Column:
-
-        1. **Tittel**
-        - `Text("Enkel Bank App")`
-        - Bruker `headlineMedium` fra MaterialTheme, vises som en stor overskrift øverst.
-
-        2. **Spacer på 16.dp**
-        - Lager vertikal luft mellom tittelen og kontoinformasjonskortet.
-
-        3. **Kontoinformasjonsseksjon (Card)**
-        - Kortet fyller hele bredden (`fillMaxWidth()`) med en liten skygge (`defaultElevation = 4.dp`).
-        - Inni kortet ligger en Column med padding 16.dp, som inneholder:
-
-        a) **OutlinedTextField for kontoeiers navn**
-           - Viser teksten fra `kontoeierNavnInput`.
-           - Label: "Kontoeiers navn".
-           - Modifier `fillMaxWidth()` gjør at tekstfeltet strekker seg over hele kortets bredde.
-           - Når brukeren skriver, oppdateres `kontoeierNavnInput` og kalles `viewModel.settKontoeierNavn(newValue)`.
-
-        b) **Spacer på 8.dp**
-           - Vertikal avstand mellom navn-feltet og saldoen.
-
-        c) **Saldo-tekst**
-           - Viser saldoen fra ViewModel med 2 desimaler, f.eks. "1234.56 kr".
-           - Bruker `titleLarge` typografi.
-           - Teksten fyller hele bredden og er sentrert (`textAlign = TextAlign.Center`).
-
-        Resultat visuelt:
-
-        -----------------------------------------------------
-        |                 Enkel Bank App                   |  <- stor overskrift
-        -----------------------------------------------------
-        |                                                   |
-        |  +-------------------------------------------+   |
-        |  | Kontoeiers navn [___________]             |   <- tekstfelt
-        |  |                                           |
-        |  |               Saldo: 1234.56 kr           |   <- sentrert saldo
-        |  +-------------------------------------------+   <- kort med skygge
-        |                                                   |
-        -----------------------------------------------------
-     */
 
     Column(
         modifier = Modifier.fillMaxSize().padding(top = 40.dp, start = 16.dp, end = 16.dp),
@@ -119,17 +73,21 @@ fun BankScreen(
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 OutlinedTextField(
-                    value = kontoeierNavnInput,
+                    value = bankViewModel.bankKonto.kontoeierNavn,
                     onValueChange = { newValue ->
-                        kontoeierNavnInput = newValue
-                        konto.kontoeierNavn = newValue
+                        // --- LOGGING LAGT TIL HER ---
+                        Log.d("BankScreen", "Kontoeiers navn endret fra: '${bankViewModel.bankKonto.kontoeierNavn}' til: '$newValue'")
+                        bankViewModel.settKontoeierNavn(newValue)
+                        landingViewModel.oppdaterKontoeierNavn(bankViewModel.bankKonto.visueltKontonummer,
+                            newValue)
+                        // --- SLUTT PÅ LOGGING ---
                     },
                     label = { Text("Kontoeiers navn") },
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    "Saldo: ${String.format("%.2f", konto.pengeSum)} kr",
+                    "Saldo: ${String.format("%.2f", bankViewModel.bankKonto.pengeSum)} kr",
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center
@@ -204,14 +162,7 @@ fun BankScreen(
         Button(onClick = {
             val belop = innskuddsBelopInput.toDoubleOrNull()
             if (belop != null) {
-                konto.pengeSum += belop
-                konto.transaksjoner.add(
-                    Transaksjon(
-                        belop = belop,
-                        type = Transaksjonstype.INNSETT,
-                        tidspunkt = Date()
-                    )
-                )
+                bankViewModel.settInn(belop)
                 innskuddsBelopInput = "" //Nullstill etter handling
                 visFeilmelding = null // Nullstill eventuel gammel feilmelding
             } else {
@@ -225,14 +176,8 @@ fun BankScreen(
         Button(onClick = {
             val belop = uttaksBelopInput.toDoubleOrNull()
             if (belop != null) {
-                if (belop <= konto.pengeSum) {
-                    konto.pengeSum -= belop
-                    konto.transaksjoner.add(
-                        Transaksjon(
-                            belop = belop,
-                            type = Transaksjonstype.UTTAK,
-                            tidspunkt = Date())
-                    )
+                if (belop <= bankViewModel.bankKonto.pengeSum) {
+                    bankViewModel.taUt(belop)
                     uttaksBelopInput = "" // Nullstill etter handling
                     visFeilmelding = null // Nullstill eventuell gammel
                 } else {
@@ -263,7 +208,7 @@ fun BankScreen(
         LazyColumn (
             modifier = Modifier.fillMaxSize()
         ){
-            items(konto.transaksjoner) { transaksjon ->
+            items(bankViewModel.bankKonto.transaksjoner) { transaksjon ->
                 TransaksjonsItem(
                     transaksjon = transaksjon,
                     formatter = formatter)

@@ -77,7 +77,8 @@ fun AppNavigation(
             if (visueltKontonummer != null) {
                 val currentAccount = landingViewModel.getKontoByVisueltKontonummer(visueltKontonummer)
                 if (currentAccount != null) {
-                    BankScreenwithAccount(konto = currentAccount, navController = navController)
+                    Log.d("MainActivity", "Initial BankKonto for bankScreen: ${currentAccount.toString()}")
+                    BankScreenwithAccount(initialKonto = currentAccount, navController = navController, landingViewModel = landingViewModel)
                 } else {
                     Text("Konto med kontonummer $visueltKontonummer ikke funnet.")
                 }
@@ -89,9 +90,26 @@ fun AppNavigation(
 }
 @Composable
 fun BankScreenwithAccount(
-    konto: BankKonto,
-    navController: NavHostController) {
-    BankScreen(konto = konto, navController = navController)
+    initialKonto: BankKonto,
+    navController: NavHostController,
+    landingViewModel: LandingViewModel) {
+    val bankViewModel: BankViewModel = viewModel (
+        factory = BankViewModelFactory(initialKonto)
+    )
+    BankScreen(navController = navController, bankViewModel = bankViewModel, landingViewModel = landingViewModel)
+}
+
+class BankViewModelFactory(
+    private val initialKonto: BankKonto
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(BankViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return BankViewModel(initialKonto) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
+}
+
 
 

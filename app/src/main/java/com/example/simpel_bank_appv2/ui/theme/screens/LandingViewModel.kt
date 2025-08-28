@@ -40,4 +40,11 @@ class LandingViewModel : ViewModel() {
     fun getKontoByVisueltKontonummer(visueltKontonummer: Long) : BankKonto? {
         return _kontoer.find {it.visueltKontonummer == visueltKontonummer}
     }
+    fun oppdaterKontoeierNavn(visueltKontonummer: Long, nyttNavn: String) {
+        val kontoIndex = _kontoer.indexOfFirst { it.visueltKontonummer == visueltKontonummer }
+        if (kontoIndex != -1) {
+            val gammelKonto = _kontoer[kontoIndex]
+            _kontoer[kontoIndex] = gammelKonto.copy(kontoeierNavn = nyttNavn)
+        }
+    }
 }
