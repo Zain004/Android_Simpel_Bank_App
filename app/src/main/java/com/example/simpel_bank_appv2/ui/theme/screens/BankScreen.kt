@@ -1,16 +1,12 @@
 package com.example.simpel_bank_app.ui.screens
 
 // ui/screens/BankScreen.kt
-import android.R
 import android.R.attr.label
 import android.util.Log
-import android.widget.Space
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.text.input.InputTransformation.Companion.keyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.Euro
@@ -18,22 +14,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
 import androidx.navigation.NavHostController
-import com.example.simpel_bank_app.data.BankKonto
 import com.example.simpel_bank_app.data.Transaksjon
 import com.example.simpel_bank_app.data.Transaksjonstype
 import com.example.simpel_bank_appv2.ui.theme.screens.LandingViewModel
-import java.time.format.DateTimeFormatter
 
 // Dataklasser som ble definert tidligere
 // data class BankKonto(...)

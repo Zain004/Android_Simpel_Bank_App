@@ -1,4 +1,4 @@
-package com.example.simpel_bank_app.data
+package com.example.simpel_bank_appV2.data
 
 enum class Transaksjonstype {
     INNSETT, UTTAK

@@ -1,31 +1,60 @@
 package com.example.simpel_bank_appv2.ui.theme.screens
 
+import android.app.Application
 import androidx.compose.runtime.mutableStateListOf
-import androidx.lifecycle.ViewModel
-import com.example.simpel_bank_app.data.BankKonto
+import androidx.room.Room
+import com.example.simpel_bank_appv2.data.AppDatabase
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.room.Room.databaseBuilder
+import com.example.simpel_bank_app.data.BankKontoEntity
+import kotlinx.coroutines.launch
 import java.util.UUID
 
-class LandingViewModel : ViewModel() {
-    // Bruk mutableStateListOf for at Compose skal reagere på endringer i listen
-    private val _kontoer = mutableStateListOf<BankKonto>()
-    val kontoer: List<BankKonto> get() = _kontoer
+class LandingViewModel(application: Application) : AndroidViewModel(application) {
 
-    private var nesteVisuelleKontonummerIndex = 1L
+    val db: AppDatabase = databaseBuilder(
+        application.applicationContext,   // Context
+        AppDatabase::class.java,          // Database-klasse
+        "bank_db"                         // Navn på databasen
+    ).build()
+    val kontoDao = db.bankKontoDao()
+    val transaksjonDao = db.transaksjonDao()
+
+    var nesteVisuelleKontonummerIndex: Long = 0
+
+    val kontoer = mutableStateListOf<BankKontoEntity>()
 
     init {
-        if (_kontoer.isEmpty()) {
-            leggTilKonto("Navn NavnNesen")
+        viewModelScope.launch {
+            val alleKontoer = kontoDao.getAlleKontoer()
+            if (alleKontoer.isEmpty()) {
+                val nyKonto = BankKontoEntity(
+                    id = UUID.randomUUID().toString(),
+                    visueltKontonummer = genererVisueltKontonummer(),
+                    kontoeierNavn = "Navn NavnNesen",
+                    pengeSum = 0.0
+                )
+                kontoDao.leggTilKonto(nyKonto)
+                kontoer.addAll(alleKontoer)
+            } else {
+                kontoer.addAll(alleKontoer)
+            }
         }
     }
     fun leggTilKonto(navn: String) {
         if (navn.isNotBlank()) {
-            val nyKonto = BankKonto(
-                id = UUID.randomUUID().toString(),
-                visueltKontonummer = genererVisueltKontonummer(),
-                kontoeierNavn = navn,
-                pengeSum = 0.0
-            )
-            _kontoer.add(nyKonto)
+            viewModelScope.launch {
+                val nyKonto = BankKontoEntity(
+                    id = UUID.randomUUID().toString(),
+                    visueltKontonummer = genererVisueltKontonummer(),
+                    kontoeierNavn = navn,
+                    pengeSum = 0.0
+                )
+                kontoDao.leggTilKonto(nyKonto)
+            kontoer.add(nyKonto)
+            }
         }
     }
 
@@ -37,14 +66,22 @@ class LandingViewModel : ViewModel() {
         return kontonummer
     }
 
-    fun getKontoByVisueltKontonummer(visueltKontonummer: Long) : BankKonto? {
-        return _kontoer.find {it.visueltKontonummer == visueltKontonummer}
+    fun getKontoByVisueltKontonummer(visueltKontonummer: Long) : BankKontoEntity? {
+        return kontoDao.getKonto(visueltKontonummer)
     }
     fun oppdaterKontoeierNavn(visueltKontonummer: Long, nyttNavn: String) {
-        val kontoIndex = _kontoer.indexOfFirst { it.visueltKontonummer == visueltKontonummer }
-        if (kontoIndex != -1) {
-            val gammelKonto = _kontoer[kontoIndex]
-            _kontoer[kontoIndex] = gammelKonto.copy(kontoeierNavn = nyttNavn)
+        viewModelScope.launch {
+            val konto = kontoDao.getKonto(visueltKontonummer)
+            if (konto != null) {
+                val oppdatertKonto = konto.copy(nyttNavn)
+                // oppdater i databasen
+                kontoDao.oppdaterKonto(oppdatertKonto)
+                // oppdater i tabellen
+                val index = kontoer.indexOfFirst { it.visueltKontonummer == visueltKontonummer }
+                if (index != -1) {
+                    kontoer[index] = oppdatertKonto
+                }
+            }
         }
     }
 }

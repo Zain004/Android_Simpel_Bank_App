@@ -57,6 +57,13 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.compose)
+    implementation("androidx.room:room-runtime:2.6.1")
+// eller
+    annotationProcessor("androidx.room:room-compiler:2.6.1") // hvis du bruker Java
+
+// Kotlin extensions og coroutines support
+    implementation("androidx.room:room-ktx:2.6.1")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
