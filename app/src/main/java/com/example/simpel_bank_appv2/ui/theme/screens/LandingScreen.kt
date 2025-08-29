@@ -78,7 +78,7 @@ fun LandingScreen(
             items(kontoer) { konto ->
                 KontoItem(konto = konto) {
                     // Når en konto klikkes, naviger til BankScreen for den kontoen
-                    navController.navigate("bankScreen/${konto.visueltKontonummer}")
+                    navController.navigate("bankScreen/${konto.id}")
                 }
             }
         }
@@ -102,7 +102,7 @@ fun KontoItem(konto: BankKontoEntity, onClick: () -> Unit) {
         ) {
             Column {
                 Text(
-                    text = "Kontonr: ${konto.visueltKontonummer}",
+                    text = "Kontonr: ${konto.id}",
                 style = MaterialTheme.typography.bodyLarge)
             }
             Text(

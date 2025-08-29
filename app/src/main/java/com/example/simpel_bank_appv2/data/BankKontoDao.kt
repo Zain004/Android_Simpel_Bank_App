@@ -16,8 +16,8 @@ interface BankKontoDao {
     @Query("SELECT * FROM bankkontoer")
     fun getAlleKontoerFlow(): Flow<List<BankKontoEntity>>
 
-    @Query("SELECT * FROM bankkontoer WHERE visueltKontonummer = :visueltKontonummer LIMIT 1")
-    fun getKontoFlow(visueltKontonummer: Long): Flow<BankKontoEntity?>
+    @Query("SELECT * FROM bankkontoer WHERE id = :id LIMIT 1")
+    fun getKontoFlow(id: Long): Flow<BankKontoEntity?>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun leggTilKonto(konto: BankKontoEntity)

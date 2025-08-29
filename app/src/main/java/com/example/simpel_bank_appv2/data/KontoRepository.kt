@@ -1,5 +1,7 @@
 package com.example.simpel_bank_appv2.data
 
+import kotlinx.coroutines.flow.Flow
+
 class KontoRepository(private val dao: BankKontoDao,
     private val transaksjonsDao: TransaksjonsDao) {
 
@@ -18,7 +20,7 @@ class KontoRepository(private val dao: BankKontoDao,
         transaksjonsDao.leggTilTransaksjon(transaksjon)
     }
 
-    suspend fun getTransaksjoner(kontoId: Long): List<TransaksjonEntity> {
-        return transaksjonsDao.getTransaksjoner(kontoId.toString())
+    fun getTransaksjoner(kontoId: Long): Flow<List<TransaksjonEntity>> {
+        return transaksjonsDao.getTransaksjonerFlow(kontoId)
     }
 }

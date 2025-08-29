@@ -118,14 +118,14 @@ fun BankScreenwithAccount(
 ) {
     // Samler Flow fra ViewModel som State for Compose
     val konto by landingViewModel
-        .getKontoByVisueltKontonummer(initialKonto.visueltKontonummer)
+        .getKontoByVisueltKontonummer(initialKonto.id)
         .collectAsState(initial = null)
 
     if (konto != null) {
         BankScreen(
             navController = navController,
             landingViewModel = landingViewModel,
-            bankViewModel = BankViewModelFactory(konto!!.visueltKontonummer,
+            bankViewModel = BankViewModelFactory(konto!!.id,
                     landingViewModel.getRepository()).create(BankViewModel::class.java)
 
         )

@@ -30,8 +30,6 @@ class LandingViewModel(
             repository.getAlleKontoer().collect { alleKontoer ->
                 if (alleKontoer.isEmpty()) {
                     val nyKonto = BankKontoEntity(
-                        id = UUID.randomUUID().toString(),
-                        visueltKontonummer = genererVisueltKontonummer(),
                         kontoeierNavn = "Navn NavnNesen",
                         pengeSum = 0.0
                     )
@@ -45,8 +43,6 @@ class LandingViewModel(
         if (navn.isNotBlank()) {
             viewModelScope.launch {
                 val nyKonto = BankKontoEntity(
-                    id = UUID.randomUUID().toString(),
-                    visueltKontonummer = genererVisueltKontonummer(),
                     kontoeierNavn = navn,
                     pengeSum = 0.0
                 )
@@ -55,14 +51,8 @@ class LandingViewModel(
         }
     }
 
-    private fun genererVisueltKontonummer(): Long {
-        val kontonummer = nesteVisuelleKontonummerIndex
-        nesteVisuelleKontonummerIndex++
-        return kontonummer
-    }
-
-    fun getKontoByVisueltKontonummer(visueltKontonummer: Long): Flow<BankKontoEntity?> {
-        return repository.getKontoByVisueltKontonummer(visueltKontonummer)
+    fun getKontoByVisueltKontonummer(id: Long): Flow<BankKontoEntity?> {
+        return repository.getKontoByVisueltKontonummer(id)
     }
 
     fun oppdaterKontoeierNavn(visueltKontonummer: Long, nyttNavn: String) {

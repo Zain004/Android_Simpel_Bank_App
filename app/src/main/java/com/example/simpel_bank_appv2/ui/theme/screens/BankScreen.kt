@@ -1,6 +1,7 @@
 package com.example.simpel_bank_app.ui.screens
 
 import android.util.Log
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
@@ -32,16 +33,18 @@ fun BankScreen(
     // Hent konto som Flow fra databasen
     val currentKonto by bankViewModel.currentKonto.collectAsState()
 
-    // State for transaksjoner lastet fra databasen
-    var transaksjoner by remember { mutableStateOf<List<TransaksjonEntity>>(emptyList()) }
+    val transaksjoner by bankViewModel.transaksjoner.collectAsState()
     val coroutineScope = rememberCoroutineScope()
 
     // Last transaksjoner når kontoen endres
+    /*
     LaunchedEffect(currentKonto?.id) {
         currentKonto?.let {
-            transaksjoner = bankViewModel.visTransaksjoner()
+            transaksjoner = bankViewModel.transaksjoner
         }
     }
+
+     */
 
     var innskuddsBelopInput by remember { mutableStateOf("") }
     var uttaksBelopInput by remember { mutableStateOf("") }
@@ -68,7 +71,7 @@ fun BankScreen(
                     onValueChange = { newValue ->
                         Log.d("BankScreen", "Kontoeiers navn endret til: '$newValue'")
                         bankViewModel.settKontoeierNavn(newValue)
-                        currentKonto?.visueltKontonummer?.let {
+                        currentKonto?.id?.let {
                             landingViewModel.oppdaterKontoeierNavn(it, newValue)
                         }
                     },
@@ -121,7 +124,7 @@ fun BankScreen(
                 val belop = innskuddsBelopInput.toDoubleOrNull()
                 if (belop != null) {
                     bankViewModel.settInn(belop)
-                    coroutineScope.launch { transaksjoner = bankViewModel.visTransaksjoner() }
+                    //coroutineScope.launch { transaksjoner = bankViewModel.visTransaksjoner() }
                     innskuddsBelopInput = ""
                     visFeilmelding = null
                 } else {
@@ -137,7 +140,7 @@ fun BankScreen(
                     coroutineScope.launch {
                         val ok = bankViewModel.taUt(belop)
                         if (ok) {
-                            transaksjoner = bankViewModel.visTransaksjoner()
+                            //transaksjoner = bankViewModel.visTransaksjoner()
                             uttaksBelopInput = ""
                             visFeilmelding = null
                         } else {
@@ -168,8 +171,8 @@ fun BankScreen(
         Text("Transaksjoner: ", style = MaterialTheme.typography.titleMedium)
         Divider()
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(transaksjoner.size) { index ->
-                TransaksjonsItem(transaksjon = transaksjoner[index], formatter = formatter)
+            items(transaksjoner) { transaksjon ->
+                TransaksjonsItem(transaksjon = transaksjon, formatter = formatter)
             }
         }
     }

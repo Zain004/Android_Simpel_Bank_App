@@ -7,7 +7,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.room.Room
 import com.example.simpel_bank_appv2.data.Transaksjonstype
-import com.example.simpel_bank_appv2.data.AppDatabase
 import com.example.simpel_bank_appv2.data.BankKontoEntity
 import com.example.simpel_bank_appv2.data.KontoRepository
 import com.example.simpel_bank_appv2.data.TransaksjonEntity
@@ -40,6 +39,10 @@ class BankViewModel(
                 initialValue = null
             )
     val currentKonto: StateFlow<BankKontoEntity?> = _currentKonto
+
+    val transaksjoner: StateFlow<List<TransaksjonEntity>> =
+        repository.getTransaksjoner(visueltKontonummer)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 /*
     init {
         loadKonto()
@@ -97,12 +100,6 @@ class BankViewModel(
     // Vis saldo
 
     fun visBalanse(): Double = _currentKonto.value?.pengeSum ?: 0.0
-
-    // Vis transaksjoner
-    suspend fun visTransaksjoner(): List<TransaksjonEntity> {
-        val konto = _currentKonto.value ?: return emptyList()
-        return repository.getTransaksjoner(konto.visueltKontonummer)
-    }
 /*
     fun loadKonto(visueltKontonummer: Long) {
         viewModelScope.launch(Dispatchers.IO) {
