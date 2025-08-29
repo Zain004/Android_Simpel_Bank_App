@@ -1,6 +1,7 @@
 package com.example.simpel_bank_app.ui.screens
 
 import android.util.Log
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -35,22 +36,17 @@ fun BankScreen(
 
     val transaksjoner by bankViewModel.transaksjoner.collectAsState()
     val coroutineScope = rememberCoroutineScope()
-
-    // Last transaksjoner når kontoen endres
-    /*
-    LaunchedEffect(currentKonto?.id) {
-        currentKonto?.let {
-            transaksjoner = bankViewModel.transaksjoner
-        }
-    }
-
-     */
+    var kontoeierNavn by remember { mutableStateOf(currentKonto?.kontoeierNavn ?: "")}
 
     var innskuddsBelopInput by remember { mutableStateOf("") }
     var uttaksBelopInput by remember { mutableStateOf("") }
     var visFeilmelding by remember { mutableStateOf<String?>(null) }
 
     val formatter = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
+
+    LaunchedEffect(currentKonto?.id) {
+        kontoeierNavn = currentKonto?.kontoeierNavn ?: ""
+    }
 
     Column(
         modifier = Modifier.fillMaxSize().padding(top = 40.dp, start = 16.dp, end = 16.dp),
@@ -67,17 +63,19 @@ fun BankScreen(
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 OutlinedTextField(
-                    value = currentKonto?.kontoeierNavn ?: "",
-                    onValueChange = { newValue ->
-                        Log.d("BankScreen", "Kontoeiers navn endret til: '$newValue'")
-                        bankViewModel.settKontoeierNavn(newValue)
-                        currentKonto?.id?.let {
-                            landingViewModel.oppdaterKontoeierNavn(it, newValue)
-                        }
-                    },
+                    value = kontoeierNavn,
+                    onValueChange = {kontoeierNavn = it},
                     label = { Text("Kontoeiers navn") },
                     modifier = Modifier.fillMaxWidth()
                 )
+                Button(
+                    modifier = Modifier.fillMaxWidth().padding(5.dp), onClick = {
+                    currentKonto?.id?.let { id ->
+                        bankViewModel.settKontoeierNavn(kontoeierNavn)
+                    }
+                }) {
+                    Text("Lagre")
+                }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     "Saldo: ${String.format("%.2f", currentKonto?.pengeSum ?: 0.0)} kr",

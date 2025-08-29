@@ -100,21 +100,7 @@ class BankViewModel(
     // Vis saldo
 
     fun visBalanse(): Double = _currentKonto.value?.pengeSum ?: 0.0
-/*
-    fun loadKonto(visueltKontonummer: Long) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val kontoEntity = repository.getKontoByVisueltKontonummer(visueltKontonummer)
-            if (kontoEntity != null) {
-                // Hent transaksjoner for denne kontoen
-                val transaksjoner = repository.getTransaksjoner(kontoEntity.visueltKontonummer)
-                _currentKonto.value = kontoEntity.copy()
-            } else {
-                _currentKonto.value = null // Konto ikke funnet
-            }
-        }
-    }
 
- */
 
     // Sett kontoeiers navn
     fun settKontoeierNavn(navn: String) {
