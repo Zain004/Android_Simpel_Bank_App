@@ -3,9 +3,7 @@ package com.example.simpel_bank_appv2.data
 class KontoRepository(private val dao: BankKontoDao,
     private val transaksjonsDao: TransaksjonsDao) {
 
-    suspend fun getKontoByVisueltKontonummer(visueltKontonummer: Long): BankKontoEntity? {
-        return dao.getKonto(visueltKontonummer)
-    }
+    fun getKontoByVisueltKontonummer(visueltKontonummer: Long) = dao.getKontoFlow(visueltKontonummer)
 
     suspend fun oppdaterKonto(konto: BankKontoEntity) {
         dao.oppdaterKonto(konto)
@@ -15,10 +13,7 @@ class KontoRepository(private val dao: BankKontoDao,
         dao.leggTilKonto(konto)
     }
 
-    suspend fun getAlleKontoer(): List<BankKontoEntity> {
-        return dao.getAlleKontoer()
-        // evt. flere metoder, f.eks. updateKonto(), insertKonto() osv.
-    }
+    fun getAlleKontoer() = dao.getAlleKontoerFlow()
     suspend fun leggTilTransaksjon(transaksjon: TransaksjonEntity) {
         transaksjonsDao.leggTilTransaksjon(transaksjon)
     }

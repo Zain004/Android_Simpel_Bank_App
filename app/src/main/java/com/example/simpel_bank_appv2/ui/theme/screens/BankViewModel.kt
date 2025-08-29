@@ -13,8 +13,10 @@ import com.example.simpel_bank_appv2.data.KontoRepository
 import com.example.simpel_bank_appv2.data.TransaksjonEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.concurrent.locks.ReentrantLock
 
@@ -29,9 +31,16 @@ class BankViewModel(
 
 
 
-    private val _currentKonto = MutableStateFlow<BankKontoEntity?>(null)
-    val currentKonto: StateFlow<BankKontoEntity?> = _currentKonto.asStateFlow()
-
+    // Nå bruker vi Flow direkte fra repository
+    private val _currentKonto: StateFlow<BankKontoEntity?> =
+        repository.getKontoByVisueltKontonummer(visueltKontonummer)
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5000),
+                initialValue = null
+            )
+    val currentKonto: StateFlow<BankKontoEntity?> = _currentKonto
+/*
     init {
         loadKonto()
     }
@@ -42,6 +51,8 @@ class BankViewModel(
             _currentKonto.value = konto
         }
     }
+
+ */
 
     // Sett inn beløp
     fun settInn(belop: Double) {
@@ -59,7 +70,7 @@ class BankViewModel(
 
             repository.leggTilTransaksjon(nyTransaksjon)
             repository.oppdaterKonto(oppdatertKonto)
-            _currentKonto.value = oppdatertKonto
+            // Flow vil automatisk oppdatere _currentKonto når DB endres_currentKonto.value = oppdatertKonto
         }
     }
 
@@ -78,7 +89,6 @@ class BankViewModel(
 
         repository.leggTilTransaksjon(nyTransaksjon)
         repository.oppdaterKonto(oppdatertKonto)
-        _currentKonto.value = oppdatertKonto
         return true
     }
 
@@ -93,7 +103,7 @@ class BankViewModel(
         val konto = _currentKonto.value ?: return emptyList()
         return repository.getTransaksjoner(konto.visueltKontonummer)
     }
-
+/*
     fun loadKonto(visueltKontonummer: Long) {
         viewModelScope.launch(Dispatchers.IO) {
             val kontoEntity = repository.getKontoByVisueltKontonummer(visueltKontonummer)
@@ -107,6 +117,8 @@ class BankViewModel(
         }
     }
 
+ */
+
     // Sett kontoeiers navn
     fun settKontoeierNavn(navn: String) {
         if (navn.isBlank()) return
@@ -115,7 +127,7 @@ class BankViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             val oppdatertKonto = konto.copy(kontoeierNavn = navn)
             repository.oppdaterKonto(oppdatertKonto)
-            _currentKonto.value = oppdatertKonto
+            // Flow vil automatisk oppdatere _currentKonto når DB endres _currentKonto.value = oppdatertKonto
         }
     }
 }

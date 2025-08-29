@@ -21,7 +21,7 @@ fun LandingScreen(
     navController: NavController,
     landingViewModel: LandingViewModel = viewModel()
     ) {
-    val kontoer = landingViewModel.kontoer
+    val kontoer by landingViewModel.kontoer.collectAsState(initial = emptyList())
     var nyKontoeierNavn by remember { mutableStateOf("") }
     Column(
         modifier = Modifier.fillMaxSize().

@@ -28,6 +28,10 @@ import com.example.simpel_bank_appv2.ui.theme.screens.LandingScreen
 import com.example.simpel_bank_appv2.ui.theme.screens.LandingViewModel
 import com.example.simpel_bank_appv2.ui.theme.screens.LandingViewModelFactory
 import com.example.simpel_bank_appv2.ui.theme.screens.SplashScreen
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -84,7 +88,8 @@ fun AppNavigation(
             // Laster kontoen fra databasen når skjermen åpnes
             LaunchedEffect(visueltKontonummer) {
                 scope.launch {
-                    konto = landingViewModel.getKontoByVisueltKontonummer(visueltKontonummer)
+                    val hentetKonto = landingViewModel.getKontoByVisueltKontonummer(visueltKontonummer).first()
+                    konto = hentetKonto
                     lastet = true
                     Log.d("MainActivity", "Konto hentet fra database: ${konto?.toString()}")
                 }
@@ -111,35 +116,42 @@ fun BankScreenwithAccount(
     navController: NavHostController,
     landingViewModel: LandingViewModel
 ) {
-    // Hent repository (enten via LandingViewModel eller opprett her)
-    val repository = landingViewModel.getRepository()
+    // Samler Flow fra ViewModel som State for Compose
+    val konto by landingViewModel
+        .getKontoByVisueltKontonummer(initialKonto.visueltKontonummer)
+        .collectAsState(initial = null)
 
-    val bankViewModel: BankViewModel = viewModel(
-        factory = BankViewModelFactory(initialKonto.visueltKontonummer, repository)
-    )
+    if (konto != null) {
+        BankScreen(
+            navController = navController,
+            landingViewModel = landingViewModel,
+            bankViewModel = BankViewModelFactory(konto!!.visueltKontonummer,
+                    landingViewModel.getRepository()).create(BankViewModel::class.java)
 
-    BankScreen(
-        navController = navController,
-        bankViewModel = bankViewModel,
-        landingViewModel = landingViewModel
-    )
+        )
+    } else {
+        Text("Laster konto…")
+    }
 }
+
+
 
 
 class BankViewModel(
-    private val visueltKontonummer: Long,
-    private val repository: KontoRepository
+    visueltKontonummer: Long,
+    repository: KontoRepository
 ) : ViewModel() {
 
-    var konto by mutableStateOf<BankKontoEntity?>(null)
-        private set
-
-    init {
-        viewModelScope.launch {
-            konto = repository.getKontoByVisueltKontonummer(visueltKontonummer)
-        }
-    }
+    // Konto som StateFlow – oppdateres automatisk når databasen endres
+    val konto: StateFlow<BankKontoEntity?> = repository
+        .getKontoByVisueltKontonummer(visueltKontonummer)
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = null
+        )
 }
+
 class BankViewModelFactory(
     private val visueltKontonummer: Long,
     private val repository: KontoRepository
@@ -153,4 +165,13 @@ class BankViewModelFactory(
     }
 }
 
+/*
+val kontoer by landingViewModel.kontoer.collectAsState()
+LazyColumn {
+    items(kontoer) { konto ->
+        Text("Navn: ${konto.kontoeierNavn}, Saldo: ${konto.pengeSum}")
+    }
+}
 
+
+ */

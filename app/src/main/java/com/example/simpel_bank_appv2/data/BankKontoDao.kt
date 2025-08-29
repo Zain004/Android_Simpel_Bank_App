@@ -7,17 +7,17 @@ import androidx.room.Query
 import androidx.room.Update
 
 import com.example.simpel_bank_appv2.data.BankKontoEntity
+import kotlinx.coroutines.flow.Flow
 
 // BankkontoDao.kt
 
 @Dao
 interface BankKontoDao {
     @Query("SELECT * FROM bankkontoer")
-    suspend fun getAlleKontoer(): List<BankKontoEntity>
-
+    fun getAlleKontoerFlow(): Flow<List<BankKontoEntity>>
 
     @Query("SELECT * FROM bankkontoer WHERE visueltKontonummer = :visueltKontonummer LIMIT 1")
-    suspend fun getKonto(visueltKontonummer: Long): BankKontoEntity?
+    fun getKontoFlow(visueltKontonummer: Long): Flow<BankKontoEntity?>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun leggTilKonto(konto: BankKontoEntity)

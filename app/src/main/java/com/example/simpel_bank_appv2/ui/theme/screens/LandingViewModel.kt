@@ -9,6 +9,10 @@ import androidx.lifecycle.viewModelScope
 import com.example.simpel_bank_appv2.data.AppDatabase
 import com.example.simpel_bank_appv2.data.BankKontoEntity
 import com.example.simpel_bank_appv2.data.KontoRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -17,22 +21,22 @@ class LandingViewModel(
 ) : ViewModel() {
 
     var nesteVisuelleKontonummerIndex: Long = 0
-    val kontoer = mutableStateListOf<BankKontoEntity>()
+    val kontoer = repository.getAlleKontoer()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
+        // Opprett en standardkonto hvis databasen er tom
         viewModelScope.launch {
-            val alleKontoer = repository.getAlleKontoer()
-            if (alleKontoer.isEmpty()) {
-                val nyKonto = BankKontoEntity(
-                    id = UUID.randomUUID().toString(),
-                    visueltKontonummer = genererVisueltKontonummer(),
-                    kontoeierNavn = "Navn NavnNesen",
-                    pengeSum = 0.0
-                )
-                repository.leggTilKonto(nyKonto)
-                kontoer.add(nyKonto)
-            } else {
-                kontoer.addAll(alleKontoer)
+            repository.getAlleKontoer().collect { alleKontoer ->
+                if (alleKontoer.isEmpty()) {
+                    val nyKonto = BankKontoEntity(
+                        id = UUID.randomUUID().toString(),
+                        visueltKontonummer = genererVisueltKontonummer(),
+                        kontoeierNavn = "Navn NavnNesen",
+                        pengeSum = 0.0
+                    )
+                    repository.leggTilKonto(nyKonto)
+                }
             }
         }
     }
@@ -47,7 +51,6 @@ class LandingViewModel(
                     pengeSum = 0.0
                 )
                 repository.leggTilKonto(nyKonto)
-                kontoer.add(nyKonto)
             }
         }
     }
@@ -58,19 +61,16 @@ class LandingViewModel(
         return kontonummer
     }
 
-    suspend fun getKontoByVisueltKontonummer(visueltKontonummer: Long): BankKontoEntity? {
+    fun getKontoByVisueltKontonummer(visueltKontonummer: Long): Flow<BankKontoEntity?> {
         return repository.getKontoByVisueltKontonummer(visueltKontonummer)
     }
 
     fun oppdaterKontoeierNavn(visueltKontonummer: Long, nyttNavn: String) {
         viewModelScope.launch {
-            val konto = repository.getKontoByVisueltKontonummer(visueltKontonummer)
-            if (konto != null) {
-                val oppdatertKonto = konto.copy(kontoeierNavn = nyttNavn)
-                repository.oppdaterKonto(oppdatertKonto)
-                val index = kontoer.indexOfFirst { it.visueltKontonummer == visueltKontonummer }
-                if (index != -1) {
-                    kontoer[index] = oppdatertKonto
+            repository.getKontoByVisueltKontonummer(visueltKontonummer).collect { konto ->
+                konto?.let {
+                    val oppdatertKonto = it.copy(kontoeierNavn = nyttNavn)
+                    repository.oppdaterKonto(oppdatertKonto)
                 }
             }
         }
@@ -78,17 +78,16 @@ class LandingViewModel(
 
     fun getRepository(): KontoRepository = repository
 }
-
-class LandingViewModelFactory(
-    private val application: Application
-) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(LandingViewModel::class.java)) {
-            val db = AppDatabase.getDatabase(application.applicationContext)
-            val repository = KontoRepository(db.bankKontoDao(), db.transaksjonDao())
-            @Suppress("UNCHECKED_CAST")
-            return LandingViewModel(repository) as T
+    class LandingViewModelFactory(
+        private val application: Application
+    ) : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(LandingViewModel::class.java)) {
+                val db = AppDatabase.getDatabase(application.applicationContext)
+                val repository = KontoRepository(db.bankKontoDao(), db.transaksjonDao())
+                @Suppress("UNCHECKED_CAST")
+                return LandingViewModel(repository) as T
+            }
+            throw IllegalArgumentException("Unknown ViewModel class")
         }
-        throw IllegalArgumentException("Unknown ViewModel class")
     }
-}
