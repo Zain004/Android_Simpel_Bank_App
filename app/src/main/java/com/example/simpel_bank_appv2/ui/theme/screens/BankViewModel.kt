@@ -2,133 +2,120 @@ package com.example.simpel_bank_app.ui.screens
 
 // ui/BankViewModel.kt
 import android.app.Application
-import android.util.Log
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.room.Room
-import com.example.simpel_bank_appV2.data.Transaksjonstype
+import com.example.simpel_bank_appv2.data.Transaksjonstype
 import com.example.simpel_bank_appv2.data.AppDatabase
 import com.example.simpel_bank_appv2.data.BankKontoEntity
+import com.example.simpel_bank_appv2.data.KontoRepository
 import com.example.simpel_bank_appv2.data.TransaksjonEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.util.Date
 import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
 
 /*
 Tanken bak dette model viewet er at koden min skal være gjenbrukbar altså single responsibility,
 slik at klassen har kun attributer og model viewet har metodene
  */
-class BankViewModel(application: Application) : AndroidViewModel(application) {
+class BankViewModel(
+    private val visueltKontonummer: Long,
+    private val repository: KontoRepository
+) : ViewModel() {
 
-    private val db = Room.databaseBuilder(
-        application,
-        AppDatabase::class.java,
-        "bank_db"
-    ).build()
-    private val lock: ReentrantLock
-        get() = ReentrantLock()
 
-    val kontoDao = db.bankKontoDao()
-    val transaksjonDao = db.transaksjonDao()
 
     private val _currentKonto = MutableStateFlow<BankKontoEntity?>(null)
     val currentKonto: StateFlow<BankKontoEntity?> = _currentKonto.asStateFlow()
 
+    init {
+        loadKonto()
+    }
+
+    private fun loadKonto() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val konto = repository.getKontoByVisueltKontonummer(visueltKontonummer)
+            _currentKonto.value = konto
+        }
+    }
 
     // Sett inn beløp
     fun settInn(belop: Double) {
-        if (belop > 0) {
-            viewModelScope.launch(Dispatchers.IO) {
-                    val currentKontoState = _currentKonto.value ?: return@launch
-                    val updatedKonto = currentKontoState.copy(
-                        pengeSum = currentKontoState.pengeSum + belop
-                    )
+        if (belop <= 0) return
+        val konto = _currentKonto.value ?: return
 
-                    val nyTransaksjon = TransaksjonEntity(
-                        kontoId = updatedKonto.id,
-                        type = Transaksjonstype.INNSETT,
-                        belop = updatedKonto.pengeSum,
-                        tidspunkt = System.currentTimeMillis()
-                    )
-                    transaksjonDao.leggTilTransaksjon(nyTransaksjon)
-                    val updatedKontoEntity = BankKontoEntity(
-                        id = updatedKonto.id,
-                        visueltKontonummer = updatedKonto.visueltKontonummer,
-                        kontoeierNavn = updatedKonto.kontoeierNavn,
-                        pengeSum = updatedKonto.pengeSum
-                    )
-                    kontoDao.oppdaterKonto(updatedKontoEntity)
-            }
+        viewModelScope.launch(Dispatchers.IO) {
+            val oppdatertKonto = konto.copy(pengeSum = konto.pengeSum + belop)
+            val nyTransaksjon = TransaksjonEntity(
+                kontoId = konto.id,
+                type = Transaksjonstype.INNSETT,
+                belop = belop,
+                tidspunkt = System.currentTimeMillis()
+            )
+
+            repository.leggTilTransaksjon(nyTransaksjon)
+            repository.oppdaterKonto(oppdatertKonto)
+            _currentKonto.value = oppdatertKonto
         }
     }
 
     // Ta ut beløp
     suspend fun taUt(belop: Double): Boolean {
-        if (belop <= 0) return false
+        val konto = _currentKonto.value ?: return false
+        if (belop <= 0 || belop > konto.pengeSum) return false
 
-        val currentKontoState = _currentKonto.value ?: return false
+        val oppdatertKonto = konto.copy(pengeSum = konto.pengeSum - belop)
+        val nyTransaksjon = TransaksjonEntity(
+            kontoId = konto.id,
+            type = Transaksjonstype.UTTAK,
+            belop = belop,
+            tidspunkt = System.currentTimeMillis()
+        )
 
-        if (belop <= currentKontoState.pengeSum) {
-            val updatedKonto = currentKontoState.copy(pengeSum = currentKontoState.pengeSum - belop)
-
-            val nyTransaksjon = TransaksjonEntity(
-                kontoId = updatedKonto.id,
-                type = Transaksjonstype.UTTAK,
-                belop = belop,
-                tidspunkt = System.currentTimeMillis()
-            )
-
-            transaksjonDao.leggTilTransaksjon(nyTransaksjon)
-            kontoDao.oppdaterKonto(updatedKonto)
-            _currentKonto.value = updatedKonto
-
-            return true
-        }
-
-        return false
+        repository.leggTilTransaksjon(nyTransaksjon)
+        repository.oppdaterKonto(oppdatertKonto)
+        _currentKonto.value = oppdatertKonto
+        return true
     }
+
 
 
     // Vis saldo
-    fun visBalanse(): Double {
-        return _currentKonto.value?.pengeSum ?: 0.0
-    }
+
+    fun visBalanse(): Double = _currentKonto.value?.pengeSum ?: 0.0
 
     // Vis transaksjoner
     suspend fun visTransaksjoner(): List<TransaksjonEntity> {
         val konto = _currentKonto.value ?: return emptyList()
-        return transaksjonDao.getTransaksjoner(konto.id)
+        return repository.getTransaksjoner(konto.visueltKontonummer)
     }
 
+    fun loadKonto(visueltKontonummer: Long) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val kontoEntity = repository.getKontoByVisueltKontonummer(visueltKontonummer)
+            if (kontoEntity != null) {
+                // Hent transaksjoner for denne kontoen
+                val transaksjoner = repository.getTransaksjoner(kontoEntity.visueltKontonummer)
+                _currentKonto.value = kontoEntity.copy()
+            } else {
+                _currentKonto.value = null // Konto ikke funnet
+            }
+        }
+    }
 
     // Sett kontoeiers navn
     fun settKontoeierNavn(navn: String) {
-        if (navn.isBlank()) return // Validering
+        if (navn.isBlank()) return
+        val konto = _currentKonto.value ?: return
 
         viewModelScope.launch(Dispatchers.IO) {
-            val currentKontoState = _currentKonto.value ?: return@launch
-
-            // Oppdater ViewModel State FØR DB
-            val updatedKonto = currentKontoState.copy(kontoeierNavn = navn)
-            _currentKonto.value = updatedKonto
-
-            // Persister endringer til Room
-            val updatedKontoEntity = BankKontoEntity(
-                id = updatedKonto.id,
-                visueltKontonummer = updatedKonto.visueltKontonummer,
-                kontoeierNavn = updatedKonto.kontoeierNavn,
-                pengeSum = updatedKonto.pengeSum
-            )
-            kontoDao.oppdaterKonto(updatedKontoEntity)
+            val oppdatertKonto = konto.copy(kontoeierNavn = navn)
+            repository.oppdaterKonto(oppdatertKonto)
+            _currentKonto.value = oppdatertKonto
         }
     }
 }

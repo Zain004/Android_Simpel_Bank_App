@@ -7,7 +7,7 @@ import androidx.room.Query
 @Dao
 interface TransaksjonsDao {
     @Query("SELECT * FROM transaksjoner WHERE kontoId = :kontoId")
-    fun getTransaksjoner(kontoId: String): List<TransaksjonEntity>
+    suspend fun getTransaksjoner(kontoId: String): List<TransaksjonEntity>
 
     @Insert
     suspend fun leggTilTransaksjon(transaksjon: TransaksjonEntity)

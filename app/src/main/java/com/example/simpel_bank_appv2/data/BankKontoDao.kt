@@ -13,11 +13,11 @@ import com.example.simpel_bank_appv2.data.BankKontoEntity
 @Dao
 interface BankKontoDao {
     @Query("SELECT * FROM bankkontoer")
-    fun getAlleKontoer(): List<BankKontoEntity>
+    suspend fun getAlleKontoer(): List<BankKontoEntity>
 
 
     @Query("SELECT * FROM bankkontoer WHERE visueltKontonummer = :visueltKontonummer LIMIT 1")
-    fun getKonto(visueltKontonummer: Long): BankKontoEntity?
+    suspend fun getKonto(visueltKontonummer: Long): BankKontoEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun leggTilKonto(konto: BankKontoEntity)

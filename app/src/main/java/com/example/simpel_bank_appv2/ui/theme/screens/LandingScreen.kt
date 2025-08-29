@@ -3,6 +3,7 @@ package com.example.simpel_bank_appv2.ui.theme.screens
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
@@ -12,7 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.simpel_bank_app.data.BankKonto // Antar du har denne dataklassen
+import com.example.simpel_bank_appv2.data.BankKontoEntity // Antar du har denne dataklassen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -85,7 +86,7 @@ fun LandingScreen(
 }
 
 @Composable
-fun KontoItem(konto: BankKonto, onClick: () -> Unit) {
+fun KontoItem(konto: BankKontoEntity, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()

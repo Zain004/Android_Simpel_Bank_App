@@ -3,7 +3,7 @@ package com.example.simpel_bank_appv2.data
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
-import com.example.simpel_bank_appV2.data.Transaksjonstype
+import com.example.simpel_bank_appv2.data.Transaksjonstype
 import java.util.Date
 
 @Entity(
