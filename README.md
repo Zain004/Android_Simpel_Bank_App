@@ -14,4 +14,3 @@ Kjernefunksjonalitet:
 
     Transaksjonshistorikk: En metode for å liste opp og vise alle transaksjoner som har funnet sted på kontoen.
 
-    Demo i main(): Eksempler på hvordan man oppretter en BankKonto og bruker de ulike metodene i BankStart.kt-filen.
